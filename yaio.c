@@ -8,12 +8,17 @@ int print_s(char *s) {
     return 0;
 }
 
+int print_s_r(char *s, size_t count) {
+    write(1, s, count);
+    return 0;
+}
+
 int print_st(size_t v) {
     char out[21];
 
     st_to_str(out, v);
     print_s(out);
-
+    
     return 0;
 }
 
@@ -24,10 +29,10 @@ int st_to_str(char *res, size_t v) {
 
     str[max_len - 1] = 0; 
 
-    while(v > 0) {
+    do {
         str[cur_pos--] = v % 10 + 48;
         v /= 10;
-    }
+    } while(v > 0);
 
     strcpy(res , str + cur_pos + 1);
     return 0;
