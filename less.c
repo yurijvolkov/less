@@ -3,29 +3,32 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
-#include "yaio.h"
-#include <string.h>
+#include <curses.h>
+#include "exec.h"
+#include <locale.h>
+#include "buffer.h"
 
 int main(int argc, char *argv[]) {
-	struct winsize win_size;
+	struct termios _new, _old;
+	Context* ctx;
 
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size);
 
-	size_t a = 12345006;
-	print_st(win_size.ws_row);
+    ioctl( STDIN_FILENO, TCGETS, &_new);
+	_old = _new;
+	_new.c_lflag =  ~(ICANON | ECHO) & _new.c_lflag ;
+    _new.c_cc[VTIME] = 0;
+    _new.c_cc[VMIN] = 1;
+	ioctl( STDIN_FILENO, TCSETS, &_new);
+
+    setlocale (LC_ALL, "");
+
+	initscr();
+	
+    initialise_ctx(argc, argv, &ctx);
+	
+	exec(NEXT_FILE_COMMAND, ctx);
+	
+	endwin();
+	ioctl( STDIN_FILENO, TCSETS, &_old);
 	return EXIT_SUCCESS;	
 }
-
-int parse_keys(int argc, char *argv[]) {
-	for(int i = 0; i < argc; i++) {
-		if(argv[i][0] != '-')
-			return i;
-		switch(argv[i][1]) {
-			case 'a' : printf("Option \'a\' parsed.\n");
-			case 'b' : printf("Option \'b\' parsed.\n");
-			default : printf("Unknown option.\n");
-		} 
-	}
-	return argc;
-}
-
