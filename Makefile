@@ -1,5 +1,5 @@
 CC = gcc
-OPTS =  -Wall -pedantic
+OPTS = -g -Wall -pedantic
 
 all : less.o yaio.o loader.o exec.o yastrings.o buffer.o
 	$(CC) $(OPTS) -o less less.o yaio.o loader.o exec.o yastrings.o buffer.o  -lcurses

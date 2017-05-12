@@ -24,7 +24,7 @@ int prev_line(Context *ctx, struct winsize win_size) {
     return 0;
 }
 
-int next_line_buf(Context *ctx, struct winsize win_size, int n) {
+int next_n_line_buf(Context *ctx, struct winsize win_size, int n) {
     int r_code;
     int start_id;
     int x, y;
@@ -57,17 +57,57 @@ int next_line_buf(Context *ctx, struct winsize win_size, int n) {
         n--;
     }
 
+
     bufferise(ctx, win_size);
     return next_line_buf(ctx, win_size, n);
 
 }
 
+int next_line_buf(Context *ctx, struct winsize win_size) {
+    int r_code;
+    int start_id;
+    int x, y;
+
+    start_id = 0;
+    if(ctx->cur_line + 1 <= ctx->max_line) {
+        if(ctx->cur_line >= 0)
+            start_id = ctx->lines[ctx->cur_line];
+        
+        getyx(stdscr,y,x);
+
+        if(ctx->lines[ctx->cur_line+1]-start_id == 0){
+            ctx->cur_line++;
+            return next_line_buf(ctx, win_size);
+        }
+        
+        if(y == win_size.ws_row - 2){
+            scrl(1);
+            y-=1;
+        }
+        
+
+        mvaddnstr(y,x,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+1]-start_id );
+        ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start;
+        ctx->cur_line += 1;
+     
+        return 0;
+    }
+
+    if(ctx->buf_f_size < BUF_SIZE - 1)
+        return -1;
+
+    bufferise(ctx, win_size);
+    return next_line_buf(ctx, win_size);
+
+}
+
+
 int next_page(Context *ctx, struct winsize win_size){
     int lines;
 
-    lines = win_size.ws_row;
+    lines = win_size.ws_row ;
     while(--lines > 0 )
-        next_line_buf(ctx, win_size, 1);
+        next_line_buf(ctx, win_size);
     
     return 0;
 }
@@ -76,7 +116,8 @@ int exec (char command, Context *ctx) {
     struct winsize win_size;
     char input;
     char ret_code;
- 
+    int i; 
+
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size); 
     
     if(ctx->cur_desc == -1){
@@ -88,8 +129,9 @@ int exec (char command, Context *ctx) {
             bufferise(ctx, win_size);
             next_page(ctx, win_size);
             break;  
+
         case NEXT_LINE_COMMAND:
-            next_line_buf(ctx, win_size,1);
+            next_line_buf(ctx, win_size);
             break;  
         case PREV_LINE_COMMAND:
             prev_line(ctx, win_size);
