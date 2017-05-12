@@ -28,7 +28,7 @@ int get_line(Context *ctx,  struct winsize win_size) {
 
 
 
-int bufferise(Context *ctx, struct winsize win_size) {
+int bufferise_forward(Context *ctx, struct winsize win_size) {
     int i;
     int length;
     int crit1, crit2;
@@ -53,4 +53,30 @@ int bufferise(Context *ctx, struct winsize win_size) {
     return 0;
 }
 
+int max(int a, int b){
+    return a > b ? a : b;
+}
+
+int bufferise(Context *ctx, struct winsize win_size ) {
+    int start_offset;
+    int i;
+    int cur_line_start;
+
+    start_offset = ctx -> cur_ofsset;
+    ctx->cur_ofsset = max(ctx->cur_ofsset - BUF_SIZE/2, 0);
+
+    bufferise_forward(ctx, win_size);
+
+    i = 0;
+    do {
+        cur_line_start = start_offset;
+        if(i > 0)
+            cur_line_start += ctx -> lines[i - 1];
+        i++;
+    } while(cur_line_start != start_offset); 
+
+    ctx->cur_line = i-2;
+    
+    return 0;
+}
 

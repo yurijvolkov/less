@@ -35,7 +35,7 @@ int initialise_ctx(int argc, char* argv[],  Context **ctx) {
     (*ctx) -> cur_desc = -1;
 
 
-    cbreak();
+    //cbreak();
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size);
     (*ctx) -> win = newwin(1, win_size.ws_col, win_size.ws_row - 1, 0);
     wrefresh( (*ctx) -> win);
@@ -43,7 +43,7 @@ int initialise_ctx(int argc, char* argv[],  Context **ctx) {
     stdscr = newwin(win_size.ws_row - 1, win_size.ws_col, 0,0);
     scrollok(stdscr,TRUE);
 	noecho();
-    idlok(stdscr, TRUE);
+    //idlok(stdscr, TRUE);
     refresh();
 
     return 0;

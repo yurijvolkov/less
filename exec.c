@@ -16,11 +16,22 @@ int _max(int a, int b) {
 }
 
 int prev_line(Context *ctx, struct winsize win_size) {
-    int start_offset;
+    int start_id;
     int read_count;
+    int y,x;
+    
+    if(ctx ->cur_line >= win_size.ws_row - 1) {        
+        start_id = ctx->lines[ctx->cur_line - win_size.ws_row  ];
+        if(ctx->cur_line - win_size.ws_row == -1)
+            start_id--;
+        getyx(stdscr, y, x);
+        scrl(-1);
+        mvaddnstr(0,0, ctx->buf_forward+start_id+1, ctx->lines[ctx->cur_line - win_size.ws_row + 1] - start_id );
+        move(y,win_size.ws_col-1);
+        ctx->cur_line --;
+    }
+        
 
-    scrl(-1);
-  
     return 0;
 }
 
@@ -81,13 +92,13 @@ int next_line_buf(Context *ctx, struct winsize win_size) {
         }
         
         if(y == win_size.ws_row - 2){
+            move(y, win_size.ws_col-1);
             scrl(1);
             y-=1;
         }
         
-
         mvaddnstr(y,x,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+1]-start_id );
-        ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start;
+        ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start + BUF_SIZE / 2;
         ctx->cur_line += 1;
      
         return 0;
