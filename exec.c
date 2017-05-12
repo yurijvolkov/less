@@ -27,10 +27,17 @@ int prev_line(Context *ctx, struct winsize win_size) {
         getyx(stdscr, y, x);
         scrl(-1);
         mvaddnstr(0,0, ctx->buf_forward+start_id+1, ctx->lines[ctx->cur_line - win_size.ws_row + 1] - start_id );
-        move(y,win_size.ws_col-1);
+        move(y,x);
+        ctx->cur_ofsset =  ctx->buf_start + ctx->lines[ctx->cur_line - 1];
         ctx->cur_line --;
+        return 0;
     }
-        
+
+    if(ctx->buf_start == 0)
+        return -1;
+    
+    bufferise(ctx, win_size);
+    return prev_line(ctx, win_size);
 
     return 0;
 }
@@ -50,8 +57,7 @@ int next_n_line_buf(Context *ctx, struct winsize win_size, int n) {
             scrl(n);
             y-=n;
         }
-        
-        
+         
         mvaddnstr(y,x,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+n]-start_id);
         ctx->cur_ofsset = ctx->lines[ctx->cur_line+n] + ctx->buf_start;
         ctx->cur_line += n;
@@ -67,7 +73,6 @@ int next_n_line_buf(Context *ctx, struct winsize win_size, int n) {
         ctx->cur_line ++;
         n--;
     }
-
 
     bufferise(ctx, win_size);
     return next_line_buf(ctx, win_size, n);
@@ -98,9 +103,9 @@ int next_line_buf(Context *ctx, struct winsize win_size) {
         }
         
         mvaddnstr(y,x,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+1]-start_id );
-        ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start + BUF_SIZE / 2;
+        ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start ;
         ctx->cur_line += 1;
-     
+      
         return 0;
     }
 
@@ -109,9 +114,7 @@ int next_line_buf(Context *ctx, struct winsize win_size) {
 
     bufferise(ctx, win_size);
     return next_line_buf(ctx, win_size);
-
 }
-
 
 int next_page(Context *ctx, struct winsize win_size){
     int lines;

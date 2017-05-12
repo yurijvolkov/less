@@ -57,25 +57,51 @@ int max(int a, int b){
     return a > b ? a : b;
 }
 
+int make_lines(Context* ctx,  struct winsize win_size, int start_offset) {
+    int first_line;
+    int count_back_lines;
+    int length;
+    int pos_in_buf;
+
+    pos_in_buf = start_offset - ctx->buf_start;
+    count_back_lines = 0;
+    first_line = pos_in_buf;
+    length = 0;
+    while(pos_in_buf-- >= 0) {
+        if(ctx->buf_forward[pos_in_buf] == '\n' || ++length == win_size.ws_col) {
+            first_line = pos_in_buf + 1;
+            length = 0;
+        }
+    }
+
+    if(ctx->buf_start == 0)
+        first_line = 0;
+    return first_line + ctx ->buf_start;
+}
+
 int bufferise(Context *ctx, struct winsize win_size ) {
     int start_offset;
     int i;
     int cur_line_start;
-
+    int first_line;
     start_offset = ctx -> cur_ofsset;
     ctx->cur_ofsset = max(ctx->cur_ofsset - BUF_SIZE/2, 0);
-
     bufferise_forward(ctx, win_size);
 
-    i = 0;
-    do {
-        cur_line_start = start_offset;
-        if(i > 0)
-            cur_line_start += ctx -> lines[i - 1];
-        i++;
-    } while(cur_line_start != start_offset); 
+    ctx->cur_ofsset = make_lines(ctx, win_size, start_offset);
+    bufferise_forward(ctx, win_size);
 
-    ctx->cur_line = i-2;
+    ctx->cur_ofsset = start_offset;
+    
+    i = 0;
+
+    cur_line_start = ctx->buf_start;
+    while(cur_line_start != start_offset) {
+        i++;
+        cur_line_start = ctx -> buf_start + ctx -> lines[i - 1];
+    }
+
+    ctx->cur_line = i-1;
     
     return 0;
 }
