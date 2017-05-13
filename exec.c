@@ -5,11 +5,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <curses.h>
 #include "yastrings.h"
 #include "exec.h"
 #include "yaio.h"
-#include <curses.h>
 #include "buffer.h"
+#include "kmp.h"
 
 int _max(int a, int b) {
     return a > b ? a : b;
@@ -122,6 +123,9 @@ int next_page(Context *ctx, struct winsize win_size){
     while(--lines > 0 )
         next_line_buf(ctx, win_size);
     
+    next_line_buf(ctx, win_size); // WTF ?!!!!
+    prev_line(ctx, win_size);
+
     return 0;
 }
 
@@ -155,11 +159,38 @@ int prev_page(Context* ctx, struct winsize win_size) {
     return 0;
 }
 
+int find_str(Context* ctx, struct winsize win_size, char *pattern) {
+    int found;
+    int line;
+
+
+    found = pattern_match(ctx->buf_forward, ctx->buf_f_size, pattern, strlen(pattern));
+    if(found == -1)
+        return -1;
+    
+    line = ctx -> max_line;
+    while(line >= 0 && ctx->lines[line] > found)
+        line--;
+    line++;
+
+    printw("FOUND : %i", line); refresh(); getch();
+    
+    // if(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
+    //     while(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
+    //         prev_line(ctx, win_size);
+    // else 
+    //     while(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
+    //         next_line_buf(ctx, win_size);
+
+
+}
+
 int exec (char command, Context *ctx) {
     struct winsize win_size;
     char input;
     char ret_code;
     int i; 
+    char *pattern; 
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size); 
     
@@ -195,6 +226,13 @@ int exec (char command, Context *ctx) {
         case PREV_HALF_PAGE_COMMAND:
             prev_half_page(ctx, win_size);
             break;
+        case FIND_COMMAND:
+            pattern = calloc(100, 1);
+            echo();
+            wgetstr(ctx->win, pattern);
+            noecho();
+            find_str(ctx, win_size, pattern);
+            break;
         case QUIT_COMMAND_1:
         case QUIT_COMMAND_2:
             return 0;
@@ -202,7 +240,9 @@ int exec (char command, Context *ctx) {
 
     refresh();
     wmove(ctx->win,0,0);
+    wclrtoeol(ctx->win);
     waddch(ctx->win, ':');
+    wrefresh(ctx->win);
     input = wgetch(ctx->win);
     exec(input, ctx);
 

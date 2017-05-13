@@ -19,4 +19,6 @@
 #define QUIT_COMMAND_1 'q'
 #define QUIT_COMMAND_2 'Q'
 
+#define FIND_COMMAND '/'
+
 int exec (char command, Context *ctx);

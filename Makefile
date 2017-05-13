@@ -1,8 +1,8 @@
 CC = gcc
 OPTS = -g -Wall -pedantic
 
-all : less.o yaio.o loader.o exec.o yastrings.o buffer.o
-	$(CC) $(OPTS) -o less less.o yaio.o loader.o exec.o yastrings.o buffer.o  -lcurses
+all : less.o yaio.o loader.o exec.o yastrings.o buffer.o kmp.o
+	$(CC) $(OPTS) -o less less.o yaio.o loader.o exec.o yastrings.o buffer.o kmp.o  -lcurses
 
 less.o : less.c
 	$(CC) $(OPTS) -c less.c 
@@ -21,6 +21,9 @@ yastrings.o : yastrings.c
 
 buffer.o : buffer.c
 	$(CC) $(OPTS) -c buffer.c
+
+kmp.o : kmp.c
+	$(CC) $(OPTS) -c kmp.c
 
 clean : 
 	rm *.o less
