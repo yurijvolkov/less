@@ -102,7 +102,7 @@ int next_line_buf(Context *ctx, struct winsize win_size) {
             y-=1;
         }
         
-        mvaddnstr(y,win_size.ws_col-1,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+1]-start_id );
+        mvaddnstr(y,x,ctx->buf_forward + start_id, ctx->lines[ctx->cur_line+1]-start_id );
         ctx->cur_ofsset = ctx->lines[ctx->cur_line+1] + ctx->buf_start ;
         ctx->cur_line += 1;
       
@@ -123,8 +123,8 @@ int next_page(Context *ctx, struct winsize win_size){
     while(--lines > 0 )
         next_line_buf(ctx, win_size);
     
-    next_line_buf(ctx, win_size); // WTF ?!!!!
-    prev_line(ctx, win_size);
+  //  next_line_buf(ctx, win_size); // WTF ?!!!!
+  //  prev_line(ctx, win_size);
 
     return 0;
 }
@@ -159,53 +159,109 @@ int prev_page(Context* ctx, struct winsize win_size) {
     return 0;
 }
 
-int standout_line(int real_line, struct winsize win_size){
+int style_line(int line, struct winsize win_size, int style) {
     char s[win_size.ws_col+1];
     int x, y;
 
     getyx(stdscr, y,x);
-    mvwinstr(stdscr, real_line, 0, s);
+    mvwinstr(stdscr, line, 0, s);
     s[strlen(s) - 1] = 0;
-    attron( A_STANDOUT );
-    mvwaddstr(stdscr, real_line, 0, s);
-    attroff( A_STANDOUT );
+    attron( style );
+    mvwaddstr(stdscr, line, 0, s);
+    attroff( style );
     wmove(stdscr, y,x);
 }
 
+int standout_line(int real_line, struct winsize win_size){
+   return style_line(real_line, win_size, A_STANDOUT);
+}
+
+int refresh_window(Context* ctx, struct winsize win_size) {
+    int y;
+
+    y = 0; 
+    while(y <= win_size.ws_row - 2) {
+            style_line(y++, win_size, A_NORMAL);
+    }
+} 
+
 int find_str(Context* ctx, struct winsize win_size, char *pattern) {
     int found;
+    int count;
     int line;
     int real_min, real_max, real_line;
     int x, y;
+    int cur;
+    int* positions;
+    int init_buf_start;
+    int cur_min_offset;
+    int init_line;
 
-    found = pattern_match(ctx->buf_forward, ctx->buf_f_size, pattern, strlen(pattern));
-    if(found == -1)
-        return -1;
+    init_line = ctx->cur_line;
+    init_buf_start = ctx->buf_start;
+    cur_min_offset = 0;
+
     
-    line = ctx -> max_line;
-    while(line >= 0 && ctx->lines[line] > found)
-        line--;
-    line++;
+   // do {
+        positions = (int*) malloc(sizeof(int) * BUF_SIZE);
+        count = pattern_match(ctx->buf_forward, ctx->buf_f_size, pattern, 
+                                strlen(pattern), positions);
 
-    real_max = ctx -> cur_line;
-    real_min = real_max - win_size.ws_row + 2;
+        cur = 0;
+        do{
+            found = positions[cur];
+            if(cur_min_offset > found)
+                continue;
+            cur_min_offset = found;
 
-    while(line <=real_min){
-        prev_line(ctx, win_size);
-        real_max = ctx -> cur_line;
-        real_min = real_max - win_size.ws_row + 2;
-    }
+            line = ctx -> max_line;
+            while(line >= 0 && ctx->lines[line] > found)
+                line--;
+            line++;
+
+            if(line > ctx->max_line)
+                continue;
+                
+            real_max = ctx -> cur_line;
+            real_min = real_max - win_size.ws_row + 2;
+
+            while(line < real_min){
+                prev_line(ctx, win_size);
+                real_max = ctx -> cur_line;
+                real_min = real_max - win_size.ws_row + 2;
+            }
 
 
-    while(line > real_max) {
-        next_line_buf(ctx, win_size);
-        real_max = ctx -> cur_line;
-        real_min = real_max - win_size.ws_row + 2;
-    }
+            while(line > real_max) {
+                next_line_buf(ctx, win_size);
+                real_max = ctx -> cur_line;
+                real_min = real_max - win_size.ws_row + 2;
+            }
 
-    real_line = line - real_min;
-    standout_line(real_line, win_size);
+            real_line = line - real_min;
+            standout_line(real_line, win_size);
+            if(getch() != 'n') {
+                refresh_window(ctx, win_size);
+                return 0;
+            }
 
+            refresh_window(ctx, win_size);
+        } while(cur++ < count - 1 ); 
+
+        // if(ctx->buf_f_size < BUF_SIZE - 1)
+        //         break;
+        // ctx ->cur_ofsset = ctx->lines[ctx->max_line] + ctx->buf_start;
+        // bufferise(ctx, win_size);
+    //} while(1);
+
+    // ctx->cur_ofsset = init_buf_start;
+    
+    // bufferise(ctx, win_size);
+    
+    // while(ctx->cur_line < init_line) 
+    //     next_line_buf(ctx, win_size);
+    
+    return 0;
 }
 
 int exec (char command, Context *ctx) {

@@ -1,6 +1,6 @@
 #include <curses.h>
 
-#define BUF_SIZE 10000
+#define BUF_SIZE 20000
 typedef struct {
     char **file_names;
     char* buf_forward;
