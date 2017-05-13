@@ -159,10 +159,24 @@ int prev_page(Context* ctx, struct winsize win_size) {
     return 0;
 }
 
+int standout_line(int real_line, struct winsize win_size){
+    char s[win_size.ws_col+1];
+    int x, y;
+
+    getyx(stdscr, y,x);
+    mvwinstr(stdscr, real_line, 0, s);
+    s[strlen(s) - 1] = 0;
+    attron( A_STANDOUT );
+    mvwaddstr(stdscr, real_line, 0, s);
+    attroff( A_STANDOUT );
+    wmove(stdscr, y,x);
+}
+
 int find_str(Context* ctx, struct winsize win_size, char *pattern) {
     int found;
     int line;
-
+    int real_min, real_max, real_line;
+    int x, y;
 
     found = pattern_match(ctx->buf_forward, ctx->buf_f_size, pattern, strlen(pattern));
     if(found == -1)
@@ -173,15 +187,24 @@ int find_str(Context* ctx, struct winsize win_size, char *pattern) {
         line--;
     line++;
 
-    printw("FOUND : %i", line); refresh(); getch();
-    
-    // if(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
-    //     while(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
-    //         prev_line(ctx, win_size);
-    // else 
-    //     while(found > ctx->lines[ctx->cur_line] + ctx->buf_start)
-    //         next_line_buf(ctx, win_size);
+    real_max = ctx -> cur_line;
+    real_min = real_max - win_size.ws_row + 2;
 
+    while(line <=real_min){
+        prev_line(ctx, win_size);
+        real_max = ctx -> cur_line;
+        real_min = real_max - win_size.ws_row + 2;
+    }
+
+
+    while(line > real_max) {
+        next_line_buf(ctx, win_size);
+        real_max = ctx -> cur_line;
+        real_min = real_max - win_size.ws_row + 2;
+    }
+
+    real_line = line - real_min;
+    standout_line(real_line, win_size);
 
 }
 
